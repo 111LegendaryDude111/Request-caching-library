@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 
 export const useFetchData = <T>({
   fetchFunction,
@@ -11,12 +17,17 @@ export const useFetchData = <T>({
   const [errors, setError] = useState<Error | null>(null);
   const [reload, setReload] = useState(false);
 
+  useLayoutEffect(() => {
+    memoizedFn.current = fetchFunction;
+  }, [fetchFunction]);
+
   const reloadFetch = useCallback(() => {
     setReload((prev) => !prev);
   }, []);
 
   useEffect(() => {
     setIsLoading(true);
+    setError(null);
 
     memoizedFn
       .current()
