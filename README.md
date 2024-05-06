@@ -6,13 +6,13 @@ TODO:
 
 Правки:
 
-- memoizedFn - нужно использовать хук useEvent, вместо useRef
+- memoizedFn - нужно использовать хук useEvent, вместо useRef ++++
 - status:
   JavaScript
 
 const [status, setStatus] = useState<'init'|'success'|'error'|'fetching'>('')
 
-- нужно добавить базовый кеш + ключ кеширования
+- нужно добавить базовый кеш + ключ кеширования ++++
 
 ```TypeScript
 const vehiclesListQueryKey = ['vehicleList', pagination, search];
@@ -29,6 +29,6 @@ enabled,
 });
 
 
-- нужно подумать про отмену предыдущих запросов
-- подчищать error при перезапросах
+- нужно подумать про отмену предыдущих запросов ++++
+- подчищать error при перезапросах +++
 ```
