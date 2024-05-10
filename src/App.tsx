@@ -1,6 +1,7 @@
 import { useState } from "react";
 import "./App.css";
-import { useFetchData } from "./hooks/useFetchData";
+import { Status, useFetchData } from "./hooks/useFetchData";
+import { CacheProvider } from "./hooks/useCreateCache";
 
 interface Todo {
   completed: false;
@@ -9,50 +10,58 @@ interface Todo {
   userId: number;
 }
 
+const cache = new Map();
+// export const CacheProvider = createContext(cache);
+
 function App() {
   const [todos, setTodos] = useState<string[]>([]);
   const [input, setInput] = useState("");
 
   return (
-    <>
-      <h1>Vite + React</h1>
-      <input value={input} onChange={(e) => setInput(e.target.value)} />
-      <div className="card">
-        <button
-          onClick={() => {
-            const indexValue = input
-              ? input
-              : `${Math.floor(Math.random() * 100)}`;
+    <CacheProvider initialValue={cache}>
+      <div className="App">
+        <h1>Vite + React</h1>
+        <input value={input} onChange={(e) => setInput(e.target.value)} />
+        <div className="card">
+          <button
+            onClick={() => {
+              const indexValue = input
+                ? input
+                : `${Math.floor(Math.random() * 100)}`;
 
-            setInput("");
+              setInput("");
 
-            setTodos((prev) => [...prev, indexValue]);
-          }}
-        >
-          Add New Todo
-        </button>
-        <div style={{ display: "flex", paddingTop: 50, gap: 10 }}>
-          {todos.map((el, i) => {
-            return <TodoView indexTodo={parseInt(el)} key={el + i} />;
-          })}
+              setTodos((prev) => [...prev, indexValue]);
+            }}
+          >
+            Add New Todo
+          </button>
+          <div style={{ display: "flex", paddingTop: 50, gap: 10 }}>
+            {todos.map((el, i) => {
+              return <TodoView indexTodo={parseInt(el)} key={el + i} />;
+            })}
+          </div>
         </div>
       </div>
-    </>
+    </CacheProvider>
   );
 }
 
 export default App;
 
 function TodoView({ indexTodo }: { indexTodo: number }) {
-  const fetchTodos = (init?: RequestInit) =>
-    fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, init).then(
-      (response) => response.json()
-    );
+  const fetchTodos = (init?: AbortSignal | null) =>
+    fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
+      signal: init,
+    }).then((response) => response.json());
 
-  const { data, reloadFetch, isLoading } = useFetchData<Todo>({
+  const { data, reloadFetch, status } = useFetchData<Todo>({
     fetchFunction: fetchTodos,
-    nameForCache: "fetchTodos" + indexTodo,
+    queryKey: ["fetchTodos", indexTodo],
   });
+
+  const isLoading = status === Status.loading;
+
   // console.log(data);
 
   if (isLoading) {
