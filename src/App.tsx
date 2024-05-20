@@ -49,19 +49,21 @@ function App() {
 export default App;
 
 function TodoView({ indexTodo }: { indexTodo: number }) {
-  const fetchTodos = (props: Pick<RequestInit, "signal">) =>
-    fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
+  const fetchTodos = (props: Pick<RequestInit, "signal">) => {
+    return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
       signal: props.signal,
     }).then((response) => response.json());
+  };
 
-  const { data, reloadFetch, status } = useFetchData<Todo>({
+  const { data, reloadFetch, status, fetchNextPage } = useFetchData<Todo>({
     fetchFunction: fetchTodos,
     queryKey: ["fetchTodos", indexTodo],
+    getNextPage: () => {
+      return 2;
+    },
   });
 
   const isLoading = status === Status.loading;
-
-  // console.log(data);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -77,6 +79,7 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
       </div>
       <div className="card">
         <button onClick={reloadFetch}>Reload</button>
+        <button onClick={fetchNextPage}>fetchNextPage</button>
       </div>
     </div>
   );
