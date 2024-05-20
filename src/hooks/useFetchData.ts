@@ -7,7 +7,15 @@ import {
 } from "react";
 import { useRequestCache } from "./useRequestCache";
 
-type QueryType = (string | number | boolean | null | object)[];
+type QueryType = (
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  | Record<string, any>
+)[];
 
 export enum Status {
   init = "init",
@@ -20,17 +28,21 @@ export enum Status {
 export const useFetchData = <T>({
   fetchFunction,
   queryKey,
+  getNextPage,
 }: {
-  fetchFunction: (init: RequestInit["signal"]) => Promise<T>;
+  fetchFunction: (
+    props: Pick<RequestInit, "signal"> & { pageParams?: number }
+  ) => Promise<T>;
   queryKey?: QueryType;
+  getNextPage?: (lastData: T) => number | undefined;
 }) => {
-  // const cache = useContext(CacheProvider);
-
   const cache = useRequestCache();
 
   const memoizedFn = useRef(fetchFunction);
+  const pageParams = useRef<number | undefined>();
+
   const [data, setData] = useState<T | null>(null);
-  const [errors, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [status, setStatus] = useState(Status.init);
   const [reload, setReload] = useState(false);
 
@@ -51,6 +63,15 @@ export const useFetchData = <T>({
     setReload((prev) => !prev);
   }, []);
 
+  const fetchNextPage = useCallback(() => {
+    if (getNextPage && data) {
+      pageParams.current = getNextPage(data);
+
+      //reload with new params
+      reloadFetch();
+    }
+  }, [data, getNextPage, reloadFetch]);
+
   useEffect(() => {
     if (!cache || cache instanceof Error) return;
 
@@ -70,7 +91,7 @@ export const useFetchData = <T>({
     const controller = new AbortController();
 
     memoizedFn
-      .current(controller.signal)
+      .current({ signal: controller.signal, pageParams: pageParams.current })
       .then((res) => {
         setData(res);
         setStatus(Status.success);
@@ -88,5 +109,5 @@ export const useFetchData = <T>({
     };
   }, [cache, refetch, reload]);
 
-  return { data, status, errors, reloadFetch };
+  return { data, status, errors: error, reloadFetch, fetchNextPage };
 };

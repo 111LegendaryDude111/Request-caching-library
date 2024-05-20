@@ -11,14 +11,13 @@ interface Todo {
 }
 
 const cache = new Map();
-// export const CacheProvider = createContext(cache);
 
 function App() {
   const [todos, setTodos] = useState<string[]>([]);
   const [input, setInput] = useState("");
 
   return (
-    <CacheProvider initialValue={cache}>
+    <CacheProvider cache={cache}>
       <div className="App">
         <h1>Vite + React</h1>
         <input value={input} onChange={(e) => setInput(e.target.value)} />
@@ -50,9 +49,9 @@ function App() {
 export default App;
 
 function TodoView({ indexTodo }: { indexTodo: number }) {
-  const fetchTodos = (init?: AbortSignal | null) =>
+  const fetchTodos = (props: Pick<RequestInit, "signal">) =>
     fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
-      signal: init,
+      signal: props.signal,
     }).then((response) => response.json());
 
   const { data, reloadFetch, status } = useFetchData<Todo>({
