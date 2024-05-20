@@ -77,7 +77,7 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
         <div>title: {data?.title}</div>
         <div>completed: {data?.completed}</div>
       </div>
-      <div className="card">
+      <div className="card" style={{ display: "flex", gap: 10 }}>
         <button onClick={reloadFetch}>Reload</button>
         <button onClick={fetchNextPage}>fetchNextPage</button>
       </div>
