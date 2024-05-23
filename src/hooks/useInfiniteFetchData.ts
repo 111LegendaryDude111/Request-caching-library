@@ -67,22 +67,12 @@ export const useInfiniteFetchData = <T, PageParamType>({
     setReload((prev) => !prev);
   }, []);
 
-  const handleUpdateInfiniteData = useCallback(
-    (newData: T[]) => {
-      const newPageParam = getNextPage(newData);
-
-      setInfiniteData((prev) => ({
-        ...prev,
-        pages: prev.pages.concat(newData),
-
-        //здесь мы даем возможность пользователю самому вернуть все параметры запроса
-        pageParam: newPageParam,
-      }));
-    },
-
-    //memoize
-    [getNextPage]
-  );
+  const handleUpdateInfiniteData = useCallback((newData: T[]) => {
+    setInfiniteData((prev) => ({
+      ...prev,
+      pages: prev.pages.concat(newData),
+    }));
+  }, []);
 
   const fetchNextPage = () => {
     if (infiniteData.pages.length > 0) {
@@ -90,8 +80,6 @@ export const useInfiniteFetchData = <T, PageParamType>({
 
       if (nextPage) {
         setInfiniteData((prev) => ({ ...prev, pageParam: nextPage }));
-
-        handleReload();
       }
 
       return;
@@ -109,7 +97,11 @@ export const useInfiniteFetchData = <T, PageParamType>({
   useEffect(() => {
     if (!cache) return;
 
-    const nameForCache = JSON.stringify(cacheKeys.current);
+    //при изменении параметров в fetchNextPage у нас бы генерился новый ключ и кешировались данные именно с этими параметрами
+    const jsonKeys = cacheKeys.current.push(
+      infiniteData.pageParam as QueryType
+    );
+    const nameForCache = JSON.stringify(jsonKeys);
 
     if (cache.has(nameForCache) && !refetch.current) {
       const data = cache.get(nameForCache);
