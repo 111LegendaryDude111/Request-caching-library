@@ -6,24 +6,7 @@ import {
   useState,
 } from "react";
 import { useRequestCache } from "./useRequestCache";
-
-type QueryType = (
-  | string
-  | number
-  | boolean
-  | null
-  | undefined
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  | Record<string, any>
-)[];
-
-export enum Status {
-  init = "init",
-  loading = "loading",
-  success = "success",
-  error = "error",
-  // fetching = "fetching",
-}
+import { QueryType, Status } from "../types";
 
 export const useFetchData = <T>({
   fetchFunction,
@@ -73,14 +56,11 @@ export const useFetchData = <T>({
   }, [data, getNextPage, reloadFetch]);
 
   useEffect(() => {
-    if (!cache || cache instanceof Error) return;
+    if (!cache) return;
 
-    //add to cache
     const nameForCache = JSON.stringify(cacheKeys.current);
 
-    // console.log({ cacheKeys, cache, nameForCache });
     if (cache.has(nameForCache) && !refetch.current) {
-      // console.log("from cache");
       const data = cache.get(nameForCache);
       setData(data);
       return;
@@ -109,5 +89,5 @@ export const useFetchData = <T>({
     };
   }, [cache, refetch, reload]);
 
-  return { data, status, errors: error, reloadFetch, fetchNextPage };
+  return { data, status, error, reloadFetch, fetchNextPage };
 };
