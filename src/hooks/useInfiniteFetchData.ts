@@ -8,25 +8,11 @@ import {
 import { QueryType, Status } from "../types";
 import { useRequestCache } from "./useRequestCache";
 
-/*
-    const {data, isLoading, fetchNextPage} = useInfiniteFetchData({
-    key: ['asdfData'],
-    fetch: ({signal, pageParams}) => {},
-    getNextPage: (lastData) => {
-        return lastData.page + 1 || undefined;
-    }
-})
-
-При вызове fetchNextPage мы догружаем данные. 
-Чтобы получить дополнительные параметры след запроса (pageParam) используется функция getNextPage.
-
-*/
-
 interface UseInfiniteFetchDataProps<T, PageParamType> {
   fetchFunction: (
     signal: AbortController["signal"],
     pageParams: PageParamType
-  ) => Promise<T[]>;
+  ) => Promise<T>;
   queryKeys: QueryType;
   getNextPage: (data: T[]) => PageParamType;
   initialPageParam: PageParamType;
@@ -58,19 +44,16 @@ export const useInfiniteFetchData = <T, PageParamType>({
   const refetch = useRef(false);
 
   const memoizedFetchFn = useRef(fetchFunction);
-  const cacheKeys = useRef(queryKeys);
-
-  //   const pageParams = useRef(initialPageParam);
 
   const handleReload = useCallback(() => {
     refetch.current = true;
     setReload((prev) => !prev);
   }, []);
 
-  const handleUpdateInfiniteData = useCallback((newData: T[]) => {
+  const handleUpdateInfiniteData = useCallback((newData: T) => {
     setInfiniteData((prev) => ({
       ...prev,
-      pages: prev.pages.concat(newData),
+      pages: [...prev.pages, newData],
     }));
   }, []);
 
@@ -90,38 +73,31 @@ export const useInfiniteFetchData = <T, PageParamType>({
     memoizedFetchFn.current = fetchFunction;
   }, [fetchFunction]);
 
-  useLayoutEffect(() => {
-    cacheKeys.current = queryKeys;
-  }, [queryKeys]);
-
   useEffect(() => {
     if (!cache) return;
 
-    //при изменении параметров в fetchNextPage у нас бы генерился новый ключ и кешировались данные именно с этими параметрами
-    const jsonKeys = cacheKeys.current.push(
-      infiniteData.pageParam as QueryType
-    );
-    const nameForCache = JSON.stringify(jsonKeys);
+    const nameForCache = JSON.stringify(queryKeys);
 
     if (cache.has(nameForCache) && !refetch.current) {
       const data = cache.get(nameForCache);
 
       handleUpdateInfiniteData(data);
-
       return;
     }
 
     const controller = new AbortController();
 
     setStatus(Status.loading);
+
     memoizedFetchFn
       .current(controller.signal, infiniteData.pageParam)
-      .then((data: T[]) => {
+      .then((data: T) => {
         handleUpdateInfiniteData(data);
 
         setStatus(Status.success);
 
-        cache.set(nameForCache, data);
+        const newDataToCache = cache.get(nameForCache).push(data);
+        cache.set(nameForCache, newDataToCache);
         refetch.current = false;
       })
       .catch((err: Error) => {
@@ -136,7 +112,9 @@ export const useInfiniteFetchData = <T, PageParamType>({
     cache,
     handleUpdateInfiniteData,
     reload,
-    /*мб через реф?? --->*/ infiniteData.pageParam,
+    infiniteData.pageParam,
+    queryKeys,
   ]);
+
   return { infiniteData, error, status, handleReload, fetchNextPage };
 };

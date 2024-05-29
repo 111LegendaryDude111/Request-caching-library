@@ -1,7 +1,8 @@
 import { useState } from "react";
 import "./App.css";
-import { Status, useFetchData } from "./hooks/useFetchData";
+import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
+import { Status } from "./types";
 
 interface Todo {
   completed: false;
