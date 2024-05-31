@@ -53,21 +53,40 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
   const fetchTodos = (props: Pick<RequestInit, "signal">) => {
     return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
       signal: props.signal,
-    }).then((response) => response.json());
+    })
+      .then((response) => {
+        if (response.status > 400) {
+          throw new Error(`${response.status}`);
+        }
+        return response.json();
+      })
+      .catch((err) => {
+        return new Error(err);
+      });
   };
 
-  const { data, reloadFetch, status, fetchNextPage } = useFetchData<Todo>({
-    fetchFunction: fetchTodos,
-    queryKey: ["fetchTodos", indexTodo],
-    getNextPage: () => {
-      return 2;
-    },
-  });
+  const { data, reloadFetch, status, fetchNextPage, error } =
+    useFetchData<Todo>({
+      fetchFunction: fetchTodos,
+      queryKey: ["fetchTodos", indexTodo],
+      getNextPage: () => {
+        return 2;
+      },
+      retry: 3,
+    });
 
   const isLoading = status === Status.loading;
 
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return (
+      <div>
+        Error: name:{error.name} message:{error.message}
+      </div>
+    );
   }
 
   return (
@@ -76,7 +95,7 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
         Todo:
         <div>id: {data?.id}</div>
         <div>title: {data?.title}</div>
-        <div>completed: {data?.completed}</div>
+        <div>completed: {`${data?.completed}`}</div>
       </div>
       <div className="card" style={{ display: "flex", gap: 10 }}>
         <button onClick={reloadFetch}>Reload</button>

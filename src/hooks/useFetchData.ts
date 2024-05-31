@@ -8,15 +8,21 @@ import {
 import { useRequestCache } from "./useRequestCache";
 import { QueryType, Status } from "../types";
 
+type FetchProps<T> = (
+  props: Pick<RequestInit, "signal"> & { pageParams?: number }
+) => Promise<T>;
+
 export const useFetchData = <T>({
   fetchFunction,
   queryKey,
   getNextPage,
+  // retryTimeout,
+  retry = 0,
 }: {
-  fetchFunction: (
-    props: Pick<RequestInit, "signal"> & { pageParams?: number }
-  ) => Promise<T>;
+  fetchFunction: FetchProps<T>;
   queryKey?: QueryType;
+  // retryTimeout?: number;
+  retry?: number;
   getNextPage?: (lastData: T) => number | undefined;
 }) => {
   const cache = useRequestCache();
@@ -31,15 +37,10 @@ export const useFetchData = <T>({
 
   //update data
   const refetch = useRef(false);
-  const cacheKeys = useRef(queryKey);
 
   useLayoutEffect(() => {
     memoizedFn.current = fetchFunction;
   }, [fetchFunction]);
-
-  useLayoutEffect(() => {
-    cacheKeys.current = queryKey;
-  }, [queryKey]);
 
   const reloadFetch = useCallback(() => {
     refetch.current = true;
@@ -56,9 +57,11 @@ export const useFetchData = <T>({
   }, [data, getNextPage, reloadFetch]);
 
   useEffect(() => {
+    console.log(error);
     if (!cache) return;
+    if (error) return;
 
-    const nameForCache = JSON.stringify(cacheKeys.current);
+    const nameForCache = JSON.stringify(queryKey);
 
     if (cache.has(nameForCache) && !refetch.current) {
       const data = cache.get(nameForCache);
@@ -70,9 +73,23 @@ export const useFetchData = <T>({
 
     const controller = new AbortController();
 
-    memoizedFn
-      .current({ signal: controller.signal, pageParams: pageParams.current })
+    const getData = async () => {
+      return await memoizedFn.current({
+        signal: controller.signal,
+        pageParams: pageParams.current,
+      });
+    };
+
+    retryFetch<T>(retry, getData)
       .then((res) => {
+        if (res instanceof Error && res.message.includes("AbortError")) {
+          return;
+        }
+
+        if (res instanceof Error) {
+          throw new Error(res.message);
+        }
+
         setData(res);
         setStatus(Status.success);
 
@@ -87,7 +104,47 @@ export const useFetchData = <T>({
     return () => {
       controller.abort();
     };
-  }, [cache, refetch, reload]);
+  }, [cache, refetch, reload, retry, queryKey, error]);
+
+  //retryTimeout
+
+  // useEffect(() => {
+  //   if (!retryTimeout) {
+  //     return;
+  //   }
+
+  //   const intervalId = setInterval(() => {
+  //     reloadFetch();
+  //   }, retryTimeout);
+
+  //   return () => {
+  //     clearInterval(intervalId);
+  //   };
+  // }, [reloadFetch, retryTimeout]);
 
   return { data, status, error, reloadFetch, fetchNextPage };
 };
+
+async function retryFetch<T>(
+  attempts: number,
+  fn: () => Promise<T>
+): Promise<T | null> {
+  return new Promise((resolve, reject) => {
+    fn()
+      .then((resp) => {
+        resolve(resp);
+      })
+      .catch((err) => {
+        if (err.message.includes("AbortError")) {
+          return;
+        }
+
+        if (attempts > 1) {
+          retryFetch(attempts - 1, fn);
+          return;
+        }
+
+        reject(err);
+      });
+  });
+}
