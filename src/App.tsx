@@ -53,16 +53,12 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
   const fetchTodos = (props: Pick<RequestInit, "signal">) => {
     return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
       signal: props.signal,
-    })
-      .then((response) => {
-        if (response.status > 400) {
-          throw new Error(`${response.status}`);
-        }
-        return response.json();
-      })
-      .catch((err) => {
-        return new Error(err);
-      });
+    }).then((response) => {
+      if (response.status > 400) {
+        throw new Error(`${response.status}`);
+      }
+      return response.json();
+    });
   };
 
   const { data, reloadFetch, status, fetchNextPage, error } =

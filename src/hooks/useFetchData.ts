@@ -7,6 +7,7 @@ import {
 } from "react";
 import { useRequestCache } from "./useRequestCache";
 import { QueryType, Status } from "../types";
+import { retryFetch } from "../helpers/retryFetch";
 
 type FetchProps<T> = (
   props: Pick<RequestInit, "signal"> & { pageParams?: number }
@@ -16,12 +17,12 @@ export const useFetchData = <T>({
   fetchFunction,
   queryKey,
   getNextPage,
-  // retryTimeout,
+  retryTimeout,
   retry = 0,
 }: {
   fetchFunction: FetchProps<T>;
   queryKey?: QueryType;
-  // retryTimeout?: number;
+  retryTimeout?: number;
   retry?: number;
   getNextPage?: (lastData: T) => number | undefined;
 }) => {
@@ -80,9 +81,9 @@ export const useFetchData = <T>({
       });
     };
 
-    retryFetch<T>(retry, getData)
+    retryFetch<T>(retry, getData, retryTimeout)
       .then((res) => {
-        if (res instanceof Error && res.message.includes("AbortError")) {
+        if (res instanceof Error && res.name === "AbortError") {
           return;
         }
 
@@ -104,7 +105,7 @@ export const useFetchData = <T>({
     return () => {
       controller.abort();
     };
-  }, [cache, refetch, reload, retry, queryKey, error]);
+  }, [cache, refetch, reload, retry, queryKey, error, retryTimeout]);
 
   //retryTimeout
 
@@ -124,27 +125,3 @@ export const useFetchData = <T>({
 
   return { data, status, error, reloadFetch, fetchNextPage };
 };
-
-async function retryFetch<T>(
-  attempts: number,
-  fn: () => Promise<T>
-): Promise<T | null> {
-  return new Promise((resolve, reject) => {
-    fn()
-      .then((resp) => {
-        resolve(resp);
-      })
-      .catch((err) => {
-        if (err.message.includes("AbortError")) {
-          return;
-        }
-
-        if (attempts > 1) {
-          retryFetch(attempts - 1, fn);
-          return;
-        }
-
-        reject(err);
-      });
-  });
-}

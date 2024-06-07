@@ -4,4 +4,5 @@ npm run dev
 
 Фичи:
 
-- можно подумать про retry + retryTimeout
+- подумать над мутациями и обновлениями данных в кеше
+  https://tanstack.com/query/latest/docs/framework/react/guides/mutations

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { QueryType, Status } from "../types";
 import { useRequestCache } from "./useRequestCache";
+import { retryFetch } from "../helpers/retryFetch";
 
 interface UseInfiniteFetchDataProps<T, PageParamType> {
   fetchFunction: (
@@ -16,6 +17,8 @@ interface UseInfiniteFetchDataProps<T, PageParamType> {
   queryKeys: QueryType;
   getNextPage: (data: T[]) => PageParamType;
   initialPageParam: PageParamType;
+  retry?: number;
+  retryTimeout?: number;
 }
 
 interface InfiniteDatatype<T, PageParamType> {
@@ -28,6 +31,8 @@ export const useInfiniteFetchData = <T, PageParamType>({
   queryKeys,
   getNextPage,
   initialPageParam,
+  retry,
+  retryTimeout,
 }: UseInfiniteFetchDataProps<T, PageParamType>) => {
   const cache = useRequestCache();
 
@@ -89,9 +94,23 @@ export const useInfiniteFetchData = <T, PageParamType>({
 
     setStatus(Status.loading);
 
-    memoizedFetchFn
-      .current(controller.signal, infiniteData.pageParam)
+    const getInfiniteData = async () => {
+      return await memoizedFetchFn.current(
+        controller.signal,
+        infiniteData.pageParam
+      );
+    };
+
+    retryFetch<T>(retry, getInfiniteData, retryTimeout)
       .then((data: T) => {
+        if (data instanceof Error && data.name === "AbortError") {
+          return;
+        }
+
+        if (data instanceof Error) {
+          throw new Error(data.message);
+        }
+
         handleUpdateInfiniteData(data);
 
         setStatus(Status.success);
@@ -114,6 +133,8 @@ export const useInfiniteFetchData = <T, PageParamType>({
     reload,
     infiniteData.pageParam,
     queryKeys,
+    retry,
+    retryTimeout,
   ]);
 
   return { infiniteData, error, status, handleReload, fetchNextPage };
