@@ -6,6 +6,14 @@ export async function retryFetch<T>(
   return new Promise((resolve, reject) => {
     fn()
       .then((resp) => {
+        if (resp instanceof Error && resp.name === "AbortError") {
+          return;
+        }
+
+        if (resp instanceof Error) {
+          throw new Error(resp.message);
+        }
+
         resolve(resp);
       })
       .catch((err) => {
@@ -13,17 +21,26 @@ export async function retryFetch<T>(
           return;
         }
 
+        console.log({ attempts });
         if (attempts > 1) {
           //retryTimeout
           if (retryTimeout) {
             setTimeout(() => {
-              retryFetch(attempts - 1, fn, retryTimeout);
+              retryFetch(attempts - 1, fn, retryTimeout)
+                .then((resp) => {
+                  resolve(resp);
+                })
+                .catch((err) => reject(err));
             }, retryTimeout);
+            return;
           } else {
-            retryFetch(attempts - 1, fn, retryTimeout);
+            retryFetch(attempts - 1, fn, retryTimeout)
+              .then((resp) => {
+                resolve(resp);
+              })
+              .catch((err) => reject(err));
+            return;
           }
-
-          return;
         }
 
         reject(err);

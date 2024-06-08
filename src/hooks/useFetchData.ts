@@ -74,8 +74,8 @@ export const useFetchData = <T>({
 
     const controller = new AbortController();
 
-    const getData = async () => {
-      return await memoizedFn.current({
+    const getData = () => {
+      return memoizedFn.current({
         signal: controller.signal,
         pageParams: pageParams.current,
       });

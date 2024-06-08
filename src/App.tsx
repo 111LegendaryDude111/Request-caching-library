@@ -3,6 +3,7 @@ import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
 import { Status } from "./types";
+import { useMutation } from "./hooks/useMutation";
 
 interface Todo {
   completed: false;
@@ -49,7 +50,14 @@ function App() {
 
 export default App;
 
+interface TestData {
+  userId: number;
+  title: string;
+  body: string;
+}
+
 function TodoView({ indexTodo }: { indexTodo: number }) {
+  //Fetch fn
   const fetchTodos = (props: Pick<RequestInit, "signal">) => {
     return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
       signal: props.signal,
@@ -61,6 +69,8 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
     });
   };
 
+  //useFetchData
+
   const { data, reloadFetch, status, fetchNextPage, error } =
     useFetchData<Todo>({
       fetchFunction: fetchTodos,
@@ -69,9 +79,50 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
         return 2;
       },
       retry: 3,
+      retryTimeout: 1_000,
     });
 
   const isLoading = status === Status.loading;
+
+  //useMutation
+
+  const fetchMutation = (data: TestData) => {
+    return fetch("https://jsonplaceholder.typicode.com/posts", {
+      method: "POST",
+      body: JSON.stringify({
+        data,
+      }),
+      headers: {
+        "Content-type": "application/json; charset=UTF-8",
+      },
+    }).then((response) => {
+      if (response.status > 400) {
+        throw new Error(String(response.status));
+      }
+
+      return response.json();
+    });
+  };
+
+  const {
+    mutate,
+    isError,
+    isPending,
+    isSuccess,
+    error: mutationError,
+    data: mutationData,
+  } = useMutation<TestData, { ok: boolean }>({
+    mutationFn: fetchMutation,
+  });
+
+  console.log("useMutation ======>", {
+    mutate,
+    isError,
+    isPending,
+    isSuccess,
+    mutationError,
+    mutationData,
+  });
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -96,6 +147,17 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
       <div className="card" style={{ display: "flex", gap: 10 }}>
         <button onClick={reloadFetch}>Reload</button>
         <button onClick={fetchNextPage}>fetchNextPage</button>
+        <button
+          onClick={() => {
+            mutate({
+              userId: new Date().getSeconds() * (Math.random() * 100),
+              title: `indexTodo ===> :${indexTodo}`,
+              body: `indexTodo ===> :${indexTodo}`,
+            });
+          }}
+        >
+          MUTATION
+        </button>
       </div>
     </div>
   );
