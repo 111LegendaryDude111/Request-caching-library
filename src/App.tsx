@@ -113,6 +113,7 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
     data: mutationData,
   } = useMutation<TestData, { ok: boolean }>({
     mutationFn: fetchMutation,
+    invalidateQueryKey: ["fetchTodos", indexTodo],
   });
 
   console.log("useMutation ======>", {

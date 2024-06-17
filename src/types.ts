@@ -13,8 +13,13 @@ enum Status {
   loading = "loading",
   success = "success",
   error = "error",
-  // fetching = "fetching",
+}
+
+interface CacheData<T> {
+  data: T;
+  fetchDataCallback: (args: unknown) => Promise<T>;
+  pageParams: number;
 }
 
 export { Status };
-export type { QueryType };
+export type { QueryType, CacheData };

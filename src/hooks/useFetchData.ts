@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import { useRequestCache } from "./useRequestCache";
-import { QueryType, Status } from "../types";
+import { CacheData, QueryType, Status } from "../types";
 import { retryFetch } from "../helpers/retryFetch";
 
 type FetchProps<T> = (
@@ -58,15 +58,15 @@ export const useFetchData = <T>({
   }, [data, getNextPage, reloadFetch]);
 
   useEffect(() => {
-    console.log(error);
     if (!cache) return;
     if (error) return;
 
     const nameForCache = JSON.stringify(queryKey);
 
     if (cache.has(nameForCache) && !refetch.current) {
-      const data = cache.get(nameForCache);
-      setData(data);
+      const data: CacheData<T> = cache.get(nameForCache);
+
+      setData(data.data);
       return;
     }
 
@@ -94,7 +94,13 @@ export const useFetchData = <T>({
         setData(res);
         setStatus(Status.success);
 
-        cache.set(nameForCache, res);
+        // cache.set(nameForCache, res);
+
+        cache.set(nameForCache, {
+          data: res,
+          fetchDataCallback: memoizedFn.current,
+          pageParams: pageParams.current,
+        });
         refetch.current = false;
       })
       .catch((error: Error) => {
