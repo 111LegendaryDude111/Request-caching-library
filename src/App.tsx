@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
 import { Status } from "./types";
 import { useMutation } from "./hooks/useMutation";
+import { QueryCache } from "./constants";
+import { useRequestCache } from "./hooks/useRequestCache";
 
 interface Todo {
   completed: false;
@@ -12,11 +14,15 @@ interface Todo {
   userId: number;
 }
 
-const cache = new Map();
+const cache = new QueryCache();
 
 function App() {
   const [todos, setTodos] = useState<string[]>([]);
   const [input, setInput] = useState("");
+
+  const handleDelete = (deleteEl: string) => {
+    setTodos((prev) => prev.filter((el) => el !== deleteEl));
+  };
 
   return (
     <CacheProvider cache={cache}>
@@ -39,7 +45,13 @@ function App() {
           </button>
           <div style={{ display: "flex", paddingTop: 50, gap: 10 }}>
             {todos.map((el, i) => {
-              return <TodoView indexTodo={parseInt(el)} key={el + i} />;
+              return (
+                <TodoView
+                  indexTodo={parseInt(el)}
+                  key={el + i}
+                  onDelete={() => handleDelete(el)}
+                />
+              );
             })}
           </div>
         </div>
@@ -56,7 +68,13 @@ interface TestData {
   body: string;
 }
 
-function TodoView({ indexTodo }: { indexTodo: number }) {
+function TodoView({
+  indexTodo,
+  onDelete,
+}: {
+  indexTodo: number;
+  onDelete: VoidFunction;
+}) {
   //Fetch fn
   const fetchTodos = (props: Pick<RequestInit, "signal">) => {
     return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
@@ -116,14 +134,28 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
     invalidateQueryKey: ["fetchTodos", indexTodo],
   });
 
-  console.log("useMutation ======>", {
-    mutate,
-    isError,
-    isPending,
-    isSuccess,
-    mutationError,
-    mutationData,
-  });
+  // console.log("useMutation ======>", {
+  //   mutate,
+  //   isError,
+  //   isPending,
+  //   isSuccess,
+  //   mutationError,
+  //   mutationData,
+  // });
+
+  // Validation test
+
+  const cache = useRequestCache();
+
+  useEffect(() => {
+    const unsubscribe = cache.onInvalidate(String(indexTodo), () => {
+      console.log("test ===>");
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -159,6 +191,7 @@ function TodoView({ indexTodo }: { indexTodo: number }) {
         >
           MUTATION
         </button>
+        <button onClick={onDelete}>Delete</button>
       </div>
     </div>
   );

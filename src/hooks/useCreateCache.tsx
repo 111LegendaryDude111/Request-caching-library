@@ -1,16 +1,14 @@
 import { createContext } from "react";
+import { QueryCache } from "../constants";
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export type InitialValueType = Map<string, any>;
-
-export const CacheContext = createContext<InitialValueType | null>(null);
+export const CacheContext = createContext<QueryCache | null>(null);
 
 interface CacheProviderProps<T> {
   children: JSX.Element;
   cache: T;
 }
 
-export const CacheProvider = <Cache extends InitialValueType>(
+export const CacheProvider = <Cache extends QueryCache>(
   props: CacheProviderProps<Cache>
 ) => {
   const { cache, children } = props;

@@ -82,9 +82,10 @@ export const useInfiniteFetchData = <T, PageParamType>({
     if (!cache) return;
 
     const nameForCache = JSON.stringify(queryKeys);
+    const { queryCache } = cache;
 
-    if (cache.has(nameForCache) && !refetch.current) {
-      const data = cache.get(nameForCache);
+    if (queryCache.has(nameForCache) && !refetch.current) {
+      const data = cache.getEntry(nameForCache);
 
       handleUpdateInfiniteData(data);
       return;
@@ -115,8 +116,8 @@ export const useInfiniteFetchData = <T, PageParamType>({
 
         setStatus(Status.success);
 
-        const newDataToCache = cache.get(nameForCache).push(data);
-        cache.set(nameForCache, newDataToCache);
+        const newDataToCache = cache.getEntry(nameForCache).push(data);
+        cache.setEntry(nameForCache, newDataToCache);
         refetch.current = false;
       })
       .catch((err: Error) => {

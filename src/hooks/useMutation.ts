@@ -1,10 +1,10 @@
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { CacheData, QueryType, Status } from "../types";
+import { useCallback, useLayoutEffect, useRef, useState } from "react";
+import { QueryType, Status } from "../types";
 import { useRequestCache } from "./useRequestCache";
 
 interface UseMutationProps<T, Response> {
   mutationFn: (newData: T) => Promise<Response>;
-  invalidateQueryKey?: QueryType;
+  invalidateQueryKey?: QueryType[];
   onSuccess?: () => Promise<unknown> | void;
   onMutate?: () => void;
   onError?: (err?: Error) => void;
@@ -17,7 +17,7 @@ export const useMutation = <T, Response>({
   onError,
   invalidateQueryKey,
 }: UseMutationProps<T, Response>) => {
-  const updateCacheOnSuccess = useUpdateCache();
+  const cache = useRequestCache();
 
   const [data, setData] = useState<Response | null>(null);
   const [status, setStatus] = useState<Status>(Status.init);
@@ -56,7 +56,9 @@ export const useMutation = <T, Response>({
           setData(data);
 
           if (invalidateQueryKey && invalidateQueryKey?.length > 0) {
-            await updateCacheOnSuccess({ cacheKeys: invalidateQueryKey });
+            // Получаем ключи и конверитруем в строки
+            const keys = invalidateQueryKey.map((el) => JSON.stringify(el));
+            await cache.invalidate(keys);
           }
 
           //for success fn
@@ -69,7 +71,7 @@ export const useMutation = <T, Response>({
           memoizedOnError.current?.(error);
         });
     },
-    [invalidateQueryKey, updateCacheOnSuccess]
+    [invalidateQueryKey]
   );
 
   const isError = status === Status.error;
@@ -78,30 +80,3 @@ export const useMutation = <T, Response>({
 
   return { mutate, isSuccess, isError, isPending, data, error };
 };
-
-interface UseUpdateCache {
-  cacheKeys: QueryType;
-}
-
-function useUpdateCache() {
-  const cache = useRequestCache();
-
-  return useMemo(
-    () =>
-      async ({ cacheKeys }: UseUpdateCache) => {
-        try {
-          const cacheKey = JSON.stringify(cacheKeys);
-          const dataFromCache: CacheData<unknown> = cache.get(cacheKey);
-          if (!dataFromCache) return;
-
-          const { fetchDataCallback, pageParams } = dataFromCache;
-          const resp = await fetchDataCallback({ pageParams });
-
-          cache.set(cacheKey, { ...dataFromCache, data: resp });
-        } catch (err: unknown) {
-          throw Error(err as string);
-        }
-      },
-    [cache]
-  );
-}

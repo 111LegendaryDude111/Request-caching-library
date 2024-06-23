@@ -15,11 +15,5 @@ enum Status {
   error = "error",
 }
 
-interface CacheData<T> {
-  data: T;
-  fetchDataCallback: (args: unknown) => Promise<T>;
-  pageParams: number;
-}
-
 export { Status };
-export type { QueryType, CacheData };
+export type { QueryType };
