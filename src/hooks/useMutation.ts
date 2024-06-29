@@ -1,10 +1,8 @@
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
-import { QueryType, Status } from "../types";
-import { useRequestCache } from "./useRequestCache";
+import { Status } from "../types";
 
 interface UseMutationProps<T, Response> {
   mutationFn: (newData: T) => Promise<Response>;
-  invalidateQueryKey?: QueryType[];
   onSuccess?: () => Promise<unknown> | void;
   onMutate?: () => void;
   onError?: (err?: Error) => void;
@@ -15,10 +13,7 @@ export const useMutation = <T, Response>({
   onSuccess,
   onMutate,
   onError,
-  invalidateQueryKey,
 }: UseMutationProps<T, Response>) => {
-  const cache = useRequestCache();
-
   const [data, setData] = useState<Response | null>(null);
   const [status, setStatus] = useState<Status>(Status.init);
   const [error, setError] = useState<undefined | Error>();
@@ -40,39 +35,30 @@ export const useMutation = <T, Response>({
     memoizedOnError.current = onError;
   }, [mutationFn, onSuccess, onMutate, onError]);
 
-  const mutate = useCallback(
-    (newData: T) => {
-      setStatus(Status.loading);
+  const mutate = useCallback((newData: T) => {
+    setStatus(Status.loading);
 
-      //onMutate
-      memoizedOnMutate.current?.();
+    //onMutate
+    memoizedOnMutate.current?.();
 
-      //mutation fn
-      memoizedMutationFn
-        .current(newData)
-        .then(async (data) => {
-          setStatus(Status.success);
+    //mutation fn
+    memoizedMutationFn
+      .current(newData)
+      .then(async (data) => {
+        setStatus(Status.success);
 
-          setData(data);
+        setData(data);
 
-          if (invalidateQueryKey && invalidateQueryKey?.length > 0) {
-            // Получаем ключи и конверитруем в строки
-            const keys = invalidateQueryKey.map((el) => JSON.stringify(el));
-            await cache.invalidate(keys);
-          }
+        //for success fn
+        await memoizedOnSuccess.current?.();
+      })
+      .catch((error?: Error) => {
+        setError(error);
+        setStatus(Status.error);
 
-          //for success fn
-          await memoizedOnSuccess.current?.();
-        })
-        .catch((error?: Error) => {
-          setError(error);
-          setStatus(Status.error);
-
-          memoizedOnError.current?.(error);
-        });
-    },
-    [invalidateQueryKey]
-  );
+        memoizedOnError.current?.(error);
+      });
+  }, []);
 
   const isError = status === Status.error;
   const isPending = status === Status.loading;

@@ -1,8 +1,8 @@
 interface IQueryCache {
-  cacheData: Map<string, any>;
+  cacheData: Map<string, unknown>;
   invalidateCallbacks: Map<string, (args: unknown) => void>;
 
-  getEntry: (key: string) => any;
+  getEntry: (key: string) => unknown;
   setEntry: (key: string, value: unknown) => void;
 
   invalidate: (keys: string[]) => void;

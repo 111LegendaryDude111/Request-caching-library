@@ -72,6 +72,8 @@ export const useFetchData = <T>({
       return;
     }
 
+    cache.onInvalidate(nameForCache, reloadFetch);
+
     setStatus(Status.loading);
 
     const controller = new AbortController();
