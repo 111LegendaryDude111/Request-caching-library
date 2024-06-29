@@ -6,7 +6,7 @@ export async function retryFetch<T>(
   return new Promise((resolve, reject) => {
     fn()
       .then((resp) => {
-        if (resp instanceof Error && resp.name === "AbortError") {
+        if (resp instanceof DOMException) {
           return;
         }
 
@@ -17,11 +17,10 @@ export async function retryFetch<T>(
         resolve(resp);
       })
       .catch((err) => {
-        if (err.name === "AbortError") {
+        if (err instanceof DOMException) {
           return;
         }
 
-        console.log({ attempts });
         if (attempts > 1) {
           //retryTimeout
           if (retryTimeout) {

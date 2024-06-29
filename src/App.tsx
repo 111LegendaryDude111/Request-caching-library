@@ -1,11 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
 import { Status } from "./types";
 import { useMutation } from "./hooks/useMutation";
 import { QueryCache } from "./constants";
-import { useRequestCache } from "./hooks/useRequestCache";
 
 interface Todo {
   completed: false;
@@ -97,7 +96,7 @@ function TodoView({
         return 2;
       },
       retry: 3,
-      retryTimeout: 1_000,
+      retryTimeout: 60 * 1000 * 5,
     });
 
   const isLoading = status === Status.loading;
@@ -143,18 +142,6 @@ function TodoView({
   // });
 
   // Validation test
-
-  const cache = useRequestCache();
-
-  useEffect(() => {
-    const unsubscribe = cache.onInvalidate(String(indexTodo), () => {
-      console.log("test ===>");
-    });
-
-    return () => {
-      unsubscribe();
-    };
-  }, []);
 
   if (isLoading) {
     return <div>Loading...</div>;

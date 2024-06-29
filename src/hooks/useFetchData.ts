@@ -43,9 +43,13 @@ export const useFetchData = <T>({
     memoizedFn.current = fetchFunction;
   }, [fetchFunction]);
 
+  const clearRetryTimeout = useRef<null | VoidFunction>(null);
+
   const reloadFetch = useCallback(() => {
     refetch.current = true;
     setReload((prev) => !prev);
+
+    clearRetryTimeout.current?.();
   }, []);
 
   const fetchNextPage = useCallback(() => {
@@ -56,6 +60,15 @@ export const useFetchData = <T>({
       reloadFetch();
     }
   }, [data, getNextPage, reloadFetch]);
+
+  const getDataFromServer = useCallback(() => {
+    const intervalId = setInterval(() => {
+      refetch.current = true;
+      setReload((prev) => !prev);
+    }, retryTimeout);
+
+    return () => clearInterval(intervalId);
+  }, [retryTimeout]);
 
   useEffect(() => {
     if (!cache) return;
@@ -69,6 +82,7 @@ export const useFetchData = <T>({
 
       setData(data);
 
+      clearRetryTimeout.current = getDataFromServer();
       return;
     }
 
@@ -87,7 +101,8 @@ export const useFetchData = <T>({
 
     retryFetch<T>(retry, getData, retryTimeout)
       .then((res) => {
-        if (res instanceof Error && res.name === "AbortError") {
+        //AbortError
+        if (res instanceof DOMException) {
           return;
         }
 
@@ -100,6 +115,9 @@ export const useFetchData = <T>({
 
         cache.setEntry(nameForCache, res);
         refetch.current = false;
+
+        //Start retry polling
+        clearRetryTimeout.current = getDataFromServer();
       })
       .catch((error: Error) => {
         setStatus(Status.error);
@@ -108,24 +126,29 @@ export const useFetchData = <T>({
 
     return () => {
       controller.abort();
+      clearRetryTimeout.current?.();
     };
-  }, [cache, refetch, reload, retry, queryKey, error, retryTimeout]);
+  }, [
+    cache,
+    refetch,
+    reload,
+    retry,
+    queryKey,
+    error,
+    retryTimeout,
+    reloadFetch,
+    getDataFromServer,
+  ]);
 
-  //retryTimeout
+  useEffect(() => {
+    const onFocus = () => reloadFetch();
 
-  // useEffect(() => {
-  //   if (!retryTimeout) {
-  //     return;
-  //   }
+    window.addEventListener("visibilitychange", onFocus);
 
-  //   const intervalId = setInterval(() => {
-  //     reloadFetch();
-  //   }, retryTimeout);
-
-  //   return () => {
-  //     clearInterval(intervalId);
-  //   };
-  // }, [reloadFetch, retryTimeout]);
+    return () => {
+      window.removeEventListener("visibilitychange", onFocus);
+    };
+  }, [reloadFetch]);
 
   return { data, status, error, reloadFetch, fetchNextPage };
 };
