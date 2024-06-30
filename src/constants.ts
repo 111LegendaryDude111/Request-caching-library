@@ -1,3 +1,5 @@
+import { QueryType } from "./types";
+
 interface IQueryCache {
   cacheData: Map<string, unknown>;
   invalidateCallbacks: Map<string, (args: unknown) => void>;
@@ -5,7 +7,7 @@ interface IQueryCache {
   getEntry: (key: string) => unknown;
   setEntry: (key: string, value: unknown) => void;
 
-  invalidate: (keys: string[]) => void;
+  invalidate: (keys: QueryType[]) => void;
 
   onInvalidate: (key: string, cb: (args: unknown) => void) => void;
 }
@@ -23,11 +25,13 @@ export class QueryCache implements IQueryCache {
   }
 
   //   TODO
-  async invalidate(keys: string[]) {
+  async invalidate(keys: QueryType[]) {
+    const serializeKeys = JSON.stringify(keys);
+
     for (const iterator of this.invalidateCallbacks.entries()) {
       const [key, cb] = iterator;
 
-      if (keys.includes(key)) {
+      if (serializeKeys.includes(key)) {
         await cb();
       }
     }

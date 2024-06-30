@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
-import { Status } from "./types";
+import { QueryType, Status } from "./types";
 import { useMutation } from "./hooks/useMutation";
 import { QueryCache } from "./constants";
 
@@ -130,6 +130,10 @@ function TodoView({
     data: mutationData,
   } = useMutation<TestData, { ok: boolean }>({
     mutationFn: fetchMutation,
+    onSuccess: () => {
+      //!!поправить типизацию
+      cache.invalidate(["fetchTodos", indexTodo] as unknown as QueryType[]);
+    },
   });
 
   // console.log("useMutation ======>", {
