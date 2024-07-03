@@ -19,12 +19,17 @@ export const useFetchData = <T>({
   getNextPage,
   retryTimeout,
   retry = 0,
+  timeoutActualData = 60 * 1000 * 5,
 }: {
   fetchFunction: FetchProps<T>;
   queryKey?: QueryType;
-  retryTimeout?: number;
-  retry?: number;
   getNextPage?: (lastData: T) => number | undefined;
+  //retry times 
+  retry?: number;
+  //timeout for retry fetch
+  retryTimeout?: number;
+  //timeout for polling 
+  timeoutActualData?: number;
 }) => {
   const cache = useRequestCache();
 
@@ -65,10 +70,10 @@ export const useFetchData = <T>({
     const intervalId = setInterval(() => {
       refetch.current = true;
       setReload((prev) => !prev);
-    }, retryTimeout);
+    }, timeoutActualData);
 
     return () => clearInterval(intervalId);
-  }, [retryTimeout]);
+  }, [timeoutActualData]);
 
   useEffect(() => {
     if (!cache) return;
@@ -83,10 +88,16 @@ export const useFetchData = <T>({
       setData(data);
 
       clearRetryTimeout.current = getDataFromServer();
-      return;
+
+      return () => {
+        clearRetryTimeout.current?.();
+      };
     }
 
-    cache.onInvalidate(nameForCache, reloadFetch);
+    const deleteFromValidateList = cache.onInvalidate(
+      nameForCache,
+      reloadFetch
+    );
 
     setStatus(Status.loading);
 
@@ -101,10 +112,7 @@ export const useFetchData = <T>({
 
     retryFetch<T>(retry, getData, retryTimeout)
       .then((res) => {
-        //AbortError
-        if (res instanceof DOMException) {
-          return;
-        }
+        if (controller.signal.aborted) return;
 
         if (res instanceof Error) {
           throw new Error(res.message);
@@ -127,6 +135,7 @@ export const useFetchData = <T>({
     return () => {
       controller.abort();
       clearRetryTimeout.current?.();
+      deleteFromValidateList();
     };
   }, [
     cache,

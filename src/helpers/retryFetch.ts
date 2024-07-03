@@ -6,43 +6,35 @@ export async function retryFetch<T>(
   return new Promise((resolve, reject) => {
     fn()
       .then((resp) => {
-        if (resp instanceof DOMException) {
-          return;
-        }
-
-        if (resp instanceof Error) {
-          throw new Error(resp.message);
-        }
-
         resolve(resp);
       })
-      .catch((err) => {
+      .catch(async (err) => {
         if (err instanceof DOMException) {
-          return;
+          return null;
         }
 
-        if (attempts > 1) {
-          //retryTimeout
-          if (retryTimeout) {
-            setTimeout(() => {
-              retryFetch(attempts - 1, fn, retryTimeout)
-                .then((resp) => {
-                  resolve(resp);
-                })
-                .catch((err) => reject(err));
-            }, retryTimeout);
-            return;
-          } else {
-            retryFetch(attempts - 1, fn, retryTimeout)
-              .then((resp) => {
-                resolve(resp);
-              })
-              .catch((err) => reject(err));
-            return;
+        if (attempts < 1) {
+          reject(err);
+        }
+
+        //retryTimeout
+        if (retryTimeout) {
+          setTimeout(async () => {
+            try {
+              await retryFetch(attempts - 1, fn, retryTimeout);
+            } catch (err) {
+              reject(err);
+            }
+          }, retryTimeout);
+
+          return;
+        } else {
+          try {
+            await retryFetch(attempts - 1, fn, retryTimeout);
+          } catch (err) {
+            reject(err);
           }
         }
-
-        reject(err);
       });
   });
 }

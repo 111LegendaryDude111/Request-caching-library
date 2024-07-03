@@ -24,8 +24,7 @@ export class QueryCache implements IQueryCache {
     this.cacheData.set(key, value);
   }
 
-  //   TODO
-  async invalidate(keys: QueryType[]) {
+  async invalidate(keys: QueryType) {
     const serializeKeys = JSON.stringify(keys);
 
     for (const iterator of this.invalidateCallbacks.entries()) {

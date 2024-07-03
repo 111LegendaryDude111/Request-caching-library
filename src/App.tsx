@@ -2,7 +2,7 @@ import { useState } from "react";
 import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
 import { CacheProvider } from "./hooks/useCreateCache";
-import { QueryType, Status } from "./types";
+import { Status } from "./types";
 import { useMutation } from "./hooks/useMutation";
 import { QueryCache } from "./constants";
 
@@ -96,7 +96,7 @@ function TodoView({
         return 2;
       },
       retry: 3,
-      retryTimeout: 60 * 1000 * 5,
+      retryTimeout: 1_000,
     });
 
   const isLoading = status === Status.loading;
@@ -131,8 +131,7 @@ function TodoView({
   } = useMutation<TestData, { ok: boolean }>({
     mutationFn: fetchMutation,
     onSuccess: () => {
-      //!!поправить типизацию
-      cache.invalidate(["fetchTodos", indexTodo] as unknown as QueryType[]);
+      cache.invalidate(["fetchTodos", indexTodo]);
     },
   });
 
