@@ -24,11 +24,11 @@ export const useFetchData = <T>({
   fetchFunction: FetchProps<T>;
   queryKey?: QueryType;
   getNextPage?: (lastData: T) => number | undefined;
-  //retry times 
+  //retry times
   retry?: number;
   //timeout for retry fetch
   retryTimeout?: number;
-  //timeout for polling 
+  //timeout for polling
   timeoutActualData?: number;
 }) => {
   const cache = useRequestCache();
@@ -41,12 +41,16 @@ export const useFetchData = <T>({
   const [status, setStatus] = useState(Status.init);
   const [reload, setReload] = useState(false);
 
+  //array trigger useEffect twice
+  const memoizedQueryKey = useRef(queryKey);
+
   //update data
   const refetch = useRef(false);
 
   useLayoutEffect(() => {
     memoizedFn.current = fetchFunction;
-  }, [fetchFunction]);
+    memoizedQueryKey.current = queryKey;
+  }, [fetchFunction, queryKey]);
 
   const clearRetryTimeout = useRef<null | VoidFunction>(null);
 
@@ -78,6 +82,8 @@ export const useFetchData = <T>({
   useEffect(() => {
     if (!cache) return;
     if (error) return;
+
+    const queryKey = memoizedQueryKey.current;
 
     const nameForCache = JSON.stringify(queryKey);
     const { queryCache } = cache;
@@ -139,10 +145,8 @@ export const useFetchData = <T>({
     };
   }, [
     cache,
-    refetch,
     reload,
     retry,
-    queryKey,
     error,
     retryTimeout,
     reloadFetch,
