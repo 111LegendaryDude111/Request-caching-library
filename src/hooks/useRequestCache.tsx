@@ -1,7 +1,6 @@
 import { useContext } from "react";
-
-import { CacheContext } from "../Provider/CacheContext";
 import { QueryCache } from "../constants";
+import { CacheContext } from "../Provider/context";
 
 export const useRequestCache = (): QueryCache => {
   const cache: QueryCache | null = useContext(CacheContext);
