@@ -1,10 +1,11 @@
 import { useState } from "react";
 import "./App.css";
 import { useFetchData } from "./hooks/useFetchData";
-import { CacheProvider } from "./hooks/useCreateCache";
+// import { CacheContext } from "./hooks/CacheContext";
 import { Status } from "./types";
 import { useMutation } from "./hooks/useMutation";
-import { QueryCache } from "./constants";
+import { CacheProvider } from "./Provider/CacheContext";
+import { useRequestCache } from "./hooks/useRequestCache";
 
 interface Todo {
   completed: false;
@@ -12,8 +13,6 @@ interface Todo {
   title: string;
   userId: number;
 }
-
-const cache = new QueryCache();
 
 function App() {
   const [todos, setTodos] = useState<string[]>([]);
@@ -24,7 +23,7 @@ function App() {
   };
 
   return (
-    <CacheProvider cache={cache}>
+    <CacheProvider>
       <div className="App">
         <h1>Vite + React</h1>
         <input value={input} onChange={(e) => setInput(e.target.value)} />
@@ -74,6 +73,8 @@ function TodoView({
   indexTodo: number;
   onDelete: VoidFunction;
 }) {
+  const cache = useRequestCache();
+
   //Fetch fn
   const fetchTodos = (props: Pick<RequestInit, "signal">) => {
     return fetch(`https://jsonplaceholder.typicode.com/todos/${indexTodo}`, {
@@ -123,11 +124,11 @@ function TodoView({
 
   const {
     mutate,
-    isError,
-    isPending,
-    isSuccess,
-    error: mutationError,
-    data: mutationData,
+    // isError,
+    // isPending,
+    // isSuccess,
+    // error: mutationError,
+    // data: mutationData,
   } = useMutation<TestData, { ok: boolean }>({
     mutationFn: fetchMutation,
     onSuccess: () => {

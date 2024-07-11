@@ -1,6 +1,6 @@
 import { useContext } from "react";
 
-import { CacheContext } from "./useCreateCache";
+import { CacheContext } from "../Provider/CacheContext";
 import { QueryCache } from "../constants";
 
 export const useRequestCache = (): QueryCache => {

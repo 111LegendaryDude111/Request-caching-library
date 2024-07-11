@@ -2,16 +2,13 @@ import { createContext } from "react";
 import { QueryCache } from "../constants";
 
 export const CacheContext = createContext<QueryCache | null>(null);
+const cache = new QueryCache();
 
-interface CacheProviderProps<T> {
+interface CacheProviderProps {
   children: JSX.Element;
-  cache: T;
 }
 
-export const CacheProvider = <Cache extends QueryCache>(
-  props: CacheProviderProps<Cache>
-) => {
-  const { cache, children } = props;
+export const CacheProvider: React.FC<CacheProviderProps> = ({ children }) => {
   return (
     <CacheContext.Provider value={cache}>{children}</CacheContext.Provider>
   );
