@@ -118,12 +118,6 @@ export const useFetchData = <T>({
 
     retryFetch<T>(retry, getData, retryTimeout)
       .then((res) => {
-        if (controller.signal.aborted) return;
-
-        if (res instanceof Error) {
-          throw new Error(res.message);
-        }
-
         setData(res);
         setStatus(Status.success);
 
@@ -134,6 +128,8 @@ export const useFetchData = <T>({
         clearRetryTimeout.current = getDataFromServer();
       })
       .catch((error: Error) => {
+        if (controller.signal.aborted) return;
+
         setStatus(Status.error);
         setError(error);
       });

@@ -10,7 +10,7 @@ export async function retryFetch<T>(
       })
       .catch(async (err) => {
         if (err instanceof DOMException) {
-          return null;
+          return Promise.reject(err);
         }
 
         if (attempts < 1) {
