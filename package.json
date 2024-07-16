@@ -1,17 +1,19 @@
 {
   "name": "tan-david-query",
   "private": false,
-  "version": "0.0.7",
+  "version": "0.0.8",
   "type": "module",
   "files": [
     "dist"
   ],
+  "types": "./dist/index.d.ts",
   "main": "./dist/tan-david-query.umd.cjs",
   "module": "./dist/tan-david-query.js",
   "exports": {
     ".": {
       "import": "./dist/tan-david-query.js",
-      "require": "./dist/tan-david-query.umd.cjs"
+      "require": "./dist/tan-david-query.umd.cjs",
+      "types": "./dist/tan-david-query.d.ts"
     }
   },
   "scripts": {

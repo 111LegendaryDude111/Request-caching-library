@@ -11,8 +11,10 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true,
+    "emitDeclarationOnly": true,  // Если нужно только .d.ts файлы
     "jsx": "react-jsx",
+    "outDir": "./dist",
+    "declaration": true,  // Это генерирует .d.ts файлы
 
     /* Linting */
     "strict": true,
